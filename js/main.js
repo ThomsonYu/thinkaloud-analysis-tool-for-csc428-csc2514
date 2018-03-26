@@ -153,7 +153,7 @@ function loadTaskData () {  //load the audio when the UI is displayed
   }
 
   [transcriptData, pitchData] = parseData(task_data.data);
-
+  
   setTimeout(myTimer, 500);
   function myTimer() {
     if(pitchData.length != 0 && transcriptData.length != 0)
@@ -187,6 +187,11 @@ function processAudio() {
 function parseData(dataset_url) {
   var transcriptData = [];
   var pitchData = [];
+  var sum = 0.0;
+  var dataLength = 0;
+  var mean = 0;
+
+  var pitchArray = [];
   AmCharts.loadFile(dataset_url, {}, function(data) {
     inputdata = AmCharts.parseJSON(data);
     for(var i = 0; i < inputdata.length; i++){
@@ -200,11 +205,67 @@ function parseData(dataset_url) {
       var temppitchData = inputdata[i].pitch;
       for(var j = 0; j < temppitchData.length; j++){
         var time = start + j * (end - start) / temppitchData.length;
+        console.log(parseFloat(temppitchData[j]));
+        pitchArray.push(parseFloat(temppitchData[j]));
+        sum += parseFloat(temppitchData[j]);
         pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "legendColor": AmCharts.randomColor, "label": "undefined"});
       }
+    }
+  }
+);   
+  console.log(pitchArray);
+  console.log(sum);
+  //for (var i=0; i < pitchArray.length; i++){
+    //sum += pitchArray[i];
+  //}
+  mean = sum/pitchArray.length;
 
-    }});
+  console.log("mean:" + mean);
   return [transcriptData, pitchData];
+}
+
+function getMean(pitchArray){
+  var total = 0;
+  for (var i = 0; i < pitchArray.length; i++){
+    total += parseFloat(pitchArray[i]);
+  }
+  return total / pitchArray.length;
+}
+
+function calculateLocalSum(pitchData){
+  var total = 0;
+  var i;
+  for (i = 0; i < length; i += 1){
+    total += pitchData[i];
+  }
+  return total;
+}
+
+function getStandardDeviation(pitchData){
+  var mean = getMean(pitchData);
+
+  var sdPrep = 0;
+  for (var key in pitchData){
+    sdPrep += Math.pow((parseFloat(pitchData[key]) - mean), 2);
+  }
+  return Math.sqrt(sdPrep/(pitchData.length));
+}
+
+// Might have to tweak this to i+2 if it is too frequent
+function getSuddenPitchChange(pitchData){
+  var i;
+  var suddenChangeArray = [];
+  for (i=0; i < pitchData.length; i+=1){
+    // From low to high
+    if (Math.abs(pitchData[i])*2 < Math.abs(pitchData[i+1])){
+      suddenChangeArray.push(pitchData[i], pitchData[i+1]);
+    }
+    // From high to low
+    else if (Math.abs(pitchData[i]) > Math.abs(pitchData[i+1]*2)){
+      suddenChangeArray.push(pitchData[i], pitchData[i+1]);
+    }
+  }
+  return suddenChangeArray;
 }
 
 //draw a line graph of the feature (e.g., pitch)
