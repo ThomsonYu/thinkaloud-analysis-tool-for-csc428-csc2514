@@ -10,7 +10,7 @@ var timeline_start, timeline_end;
 var  pitchData = [], transcriptData = [];
 var mean;
 var stdDev;
-var suddenPitchChange = []
+var suddenPitchChangeData = []
 var segmentPlayStart;
 var logAudio = [];
 //this variable is to mark whether the mouse select operation is executed so that it can be distinguished from click
@@ -163,10 +163,10 @@ function loadTaskData () {  //load the audio when the UI is displayed
     {
       mean = getMean(pitchData);
       stdDev = getStdDev(pitchData, mean);
-      suddenPitchChange = getSuddenPitchChange(pitchData);
+      suddenPitchChangeData = getSuddenPitchChange(pitchData);
       console.log("Mean:" + mean);
       console.log("Sd: " + stdDev);
-      console.log(suddenPitchChange);
+      console.log(suddenPitchChangeData);
       console.log("data is ready...");
       mChart = drawCharts();
       drawTranscript();
@@ -200,11 +200,11 @@ function getSuddenPitchChange(pitchData){
     if (i+1 < pitchData.length){
       // From low to high
       if (parseFloat(pitchData[i].data)*2.0 < (pitchData[i+1].data)){
-        suddenChangeArray.push(pitchData[i].data, pitchData[i+1].data);
+        suddenChangeArray.push(pitchData[i], pitchData[i+1]);
       }
       // From high to low
       else if ((pitchData[i].data) > parseFloat(pitchData[i+1].data)*2.0){
-        suddenChangeArray.push(pitchData[i].data, pitchData[i+1].data);
+        suddenChangeArray.push(pitchData[i], pitchData[i+1]);
       }
     }
   }
@@ -243,7 +243,17 @@ function parseData(dataset_url) {
       var temppitchData = inputdata[i].pitch;
       for(var j = 0; j < temppitchData.length; j++){
         var time = start + j * (end - start) / temppitchData.length;
-        pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "legendColor": AmCharts.randomColor, "label": "undefined"});
+        if (j+1 < temppitchData.length){
+          if (parseFloat(temppitchData[j])*2.0 < parseFloat(temppitchData[j+1])){
+            pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "lineColor": "#cc4748", "legendColor": "#cc4748", "label": "undefined"});
+          }
+          else if (parseFloat(temppitchData[j]) > parseFloat(temppitchData[j+1])*2.0){
+            pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "lineColor": "#cc4748", "legendColor": "#cc4748", "label": "undefined"});
+          }
+          else {
+            pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "legendColor": AmCharts.randomColor, "label": "undefined"});
+          }
+        }
       }
     }
   }
@@ -257,6 +267,7 @@ function drawCharts(){
   chart = AmCharts.makeChart("chartdiv", {
     type: "stock",
     "theme": "light",
+    // Original data set of pitch data
     dataSets: [
   {
     fieldMappings: [{
@@ -272,26 +283,62 @@ function drawCharts(){
       toField: "legendColor"
     }
   ],
+  title: "Pitch Data",
   dataProvider: pitchData,
   categoryField: "time",
   compared: false
+}
+// Sudden pitch change data set
+,
+{
+  fieldMappings: [{
+    fromField: "data",
+    toField: "data3"
+  },
+  {
+    fromField: "label",
+    toField: "label3"
+  },
+  {
+    fromField: "legendColor",
+    toField: "legendColor"
+  }
+],
+  title: "Sudden Pitch Data",
+  dataProvider: suddenPitchChangeData,
+  color: "#cc4748",
+  categoryField: "time",
+  compared: true
 }
 ],
 panels: [
 {
   showCategoryAxis: true,
   title: "Pitch (HZ)",
-  allowTurningOff: false,
+  allowTurningOff: true,
   stockGraphs: [ {
     id: "g2",
     compareGraphType:"smoothedLine",
     valueField: "data2",
     compareField: "data2",
-    comparable: false,
+    comparable: true,
     visibleInLegend: true,
     showBalloon: false,
     lineColorField: "lineColor",
-  } ],
+  },
+  {
+    id: "g3",
+    compareGraphType:"line",
+    lineThickness: 5,
+    connect: false,
+    valueField: "data3",
+    compareField: "data3",
+    comparable: true,
+    visibleInLegend: true,
+    showBalloon: false,
+    lineColorField: "lineColor",
+  } 
+],
   stockLegend: {
     enabled: true,
     markType: "none",
