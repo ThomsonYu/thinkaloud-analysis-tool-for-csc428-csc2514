@@ -8,6 +8,9 @@ var participants_files = [];
 var task_data;
 var timeline_start, timeline_end;
 var  pitchData = [], transcriptData = [];
+var mean;
+var stdDev;
+var suddenPitchChange = []
 var segmentPlayStart;
 var logAudio = [];
 //this variable is to mark whether the mouse select operation is executed so that it can be distinguished from click
@@ -153,11 +156,17 @@ function loadTaskData () {  //load the audio when the UI is displayed
   }
 
   [transcriptData, pitchData] = parseData(task_data.data);
-  
+
   setTimeout(myTimer, 500);
   function myTimer() {
     if(pitchData.length != 0 && transcriptData.length != 0)
     {
+      mean = getMean(pitchData);
+      stdDev = getStdDev(pitchData, mean);
+      suddenPitchChange = getSuddenPitchChange(pitchData);
+      console.log("Mean:" + mean);
+      console.log("Sd: " + stdDev);
+      console.log(suddenPitchChange);
       console.log("data is ready...");
       mChart = drawCharts();
       drawTranscript();
@@ -167,6 +176,40 @@ function loadTaskData () {  //load the audio when the UI is displayed
     }
   }
 };
+
+function getMean(pitchData){
+  var total = 0;
+  for (var i = 0; i < pitchData.length; i++){
+    total += (pitchData[i].data);
+  }
+  return total / pitchData.length;
+}
+
+function getStdDev(pitchData, mean){
+  var sd = 0;
+  for (var i = 0; i < pitchData.length; i++){
+    sd += Math.pow((pitchData[i].data - mean), 2);
+  }
+  return Math.sqrt(sd/(pitchData.length));
+}
+
+// Might have to tweak this to i+2 if it is too frequent
+function getSuddenPitchChange(pitchData){
+  var suddenChangeArray = [];
+  for (var i=0; i < pitchData.length; i++){
+    if (i+1 < pitchData.length){
+      // From low to high
+      if (parseFloat(pitchData[i].data)*2.0 < (pitchData[i+1].data)){
+        suddenChangeArray.push(pitchData[i].data, pitchData[i+1].data);
+      }
+      // From high to low
+      else if ((pitchData[i].data) > parseFloat(pitchData[i+1].data)*2.0){
+        suddenChangeArray.push(pitchData[i].data, pitchData[i+1].data);
+      }
+    }
+  }
+  return suddenChangeArray;
+}
 
 function recordStart(){
   segmentPlayStart= mAudio.currentTime;
@@ -187,11 +230,7 @@ function processAudio() {
 function parseData(dataset_url) {
   var transcriptData = [];
   var pitchData = [];
-  var sum = 0.0;
-  var dataLength = 0;
-  var mean = 0;
 
-  var pitchArray = [];
   AmCharts.loadFile(dataset_url, {}, function(data) {
     inputdata = AmCharts.parseJSON(data);
     for(var i = 0; i < inputdata.length; i++){
@@ -199,73 +238,17 @@ function parseData(dataset_url) {
       var end = parseInt(parseFloat(inputdata[i].end_time) * 1000);
       var value = inputdata[i].transcription;
       var numWords = value.split(" ").length;
-      //console.log("numWords: " + numWords);
       transcriptData.push({"start": start, "end": end, "label": String(value).trim()});
 
       var temppitchData = inputdata[i].pitch;
       for(var j = 0; j < temppitchData.length; j++){
         var time = start + j * (end - start) / temppitchData.length;
-        console.log(parseFloat(temppitchData[j]));
-        pitchArray.push(parseFloat(temppitchData[j]));
-        sum += parseFloat(temppitchData[j]);
         pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "legendColor": AmCharts.randomColor, "label": "undefined"});
       }
     }
   }
-);   
-  console.log(pitchArray);
-  console.log(sum);
-  //for (var i=0; i < pitchArray.length; i++){
-    //sum += pitchArray[i];
-  //}
-  mean = sum/pitchArray.length;
-
-  console.log("mean:" + mean);
+);
   return [transcriptData, pitchData];
-}
-
-function getMean(pitchArray){
-  var total = 0;
-  for (var i = 0; i < pitchArray.length; i++){
-    total += parseFloat(pitchArray[i]);
-  }
-  return total / pitchArray.length;
-}
-
-function calculateLocalSum(pitchData){
-  var total = 0;
-  var i;
-  for (i = 0; i < length; i += 1){
-    total += pitchData[i];
-  }
-  return total;
-}
-
-function getStandardDeviation(pitchData){
-  var mean = getMean(pitchData);
-
-  var sdPrep = 0;
-  for (var key in pitchData){
-    sdPrep += Math.pow((parseFloat(pitchData[key]) - mean), 2);
-  }
-  return Math.sqrt(sdPrep/(pitchData.length));
-}
-
-// Might have to tweak this to i+2 if it is too frequent
-function getSuddenPitchChange(pitchData){
-  var i;
-  var suddenChangeArray = [];
-  for (i=0; i < pitchData.length; i+=1){
-    // From low to high
-    if (Math.abs(pitchData[i])*2 < Math.abs(pitchData[i+1])){
-      suddenChangeArray.push(pitchData[i], pitchData[i+1]);
-    }
-    // From high to low
-    else if (Math.abs(pitchData[i]) > Math.abs(pitchData[i+1]*2)){
-      suddenChangeArray.push(pitchData[i], pitchData[i+1]);
-    }
-  }
-  return suddenChangeArray;
 }
 
 //draw a line graph of the feature (e.g., pitch)
