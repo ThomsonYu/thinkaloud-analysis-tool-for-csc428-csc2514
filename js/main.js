@@ -569,6 +569,7 @@ function loadGuides(event){
         graph.lineAlpha = 1;
         graph.title = guide.label;
         graph.valueField = "dummy";
+        graph.legendValueText = "" + guide.value.toFixed(5);
         graph.relatedGuide = guide;
         event.chart.addGraph( graph );
       }
