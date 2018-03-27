@@ -313,6 +313,7 @@ panels: [
     unit: "Hz",
     unitPosition: "right",
     guides: [ {
+      id: "all",
       lineAlpha: 0.5,
       boldLabel: true,
       value: mean,
@@ -320,10 +321,12 @@ panels: [
       color: "#008000",
       lineColor: "#008000",
       label: "Average Pitch",
+      title: "average",
       inside: false,
       position: "right"
     },
     {
+      id: "all",
       lineAlpha: 0.5,
       boldLabel: true,
       value: mean + stdDev,
@@ -331,10 +334,12 @@ panels: [
       color: "#008000",
       lineColor: "#008000",
       label: "+1 SD",
+      title: "sd",
       inside: false,
       position: "right"
     },
     {
+      id: "all",
       lineAlpha: 0.5,
       boldLabel: true,
       value: mean-stdDev,
@@ -342,6 +347,7 @@ panels: [
       color: "#008000",
       lineColor: "#008000",
       label: "-1 SD",
+      title: "sd",
       inside: false,
       position: "right"
     }]
@@ -568,30 +574,43 @@ function loadGuides(event){
         graph.lineColor = guide.lineColor;
         graph.lineAlpha = 1;
         graph.title = guide.label;
+        graph.id = "all";
         graph.valueField = "dummy";
         graph.legendValueText = "" + guide.value.toFixed(5);
         graph.relatedGuide = guide;
+        if (guide.title == "sd"){
+          graph.visibleInLegend = false;
+        }
         event.chart.addGraph( graph );
       }
     }
+    console.log(event.chart);
   }, 10 );
 }
 
 function hideGuide(event){
-  if (event.dataItem.relatedGuide !== undefined) {
-    event.dataItem.relatedGuide.lineAlpha = 0;
-    event.dataItem.relatedGuide.originalLabel = event.dataItem.relatedGuide.label;
-    event.dataItem.relatedGuide.label = "";
-    event.chart.validateNow();
+  if (event.dataItem.relatedGuide.id == "all"){
+    for (var i=0; i < event.chart.graphs.length; i++){
+      if (event.chart.graphs[i].id == "all"){
+        event.chart.graphs[i].relatedGuide.lineAlpha = 0;
+        event.chart.graphs[i].relatedGuide.originalLabel = event.chart.graphs[i].relatedGuide.label;
+        event.chart.graphs[i].relatedGuide.label = "";
+      }
+    }
   }
+  event.chart.validateNow();
 }
 
 function showguide(event){
-  if (event.dataItem.relatedGuide !== undefined) {
-    event.dataItem.relatedGuide.lineAlpha = 0.5;
-    event.dataItem.relatedGuide.label = event.dataItem.relatedGuide.originalLabel;
-    event.chart.validateNow();
+  if (event.dataItem.relatedGuide.id == "all"){
+    for (var i=0; i < event.chart.graphs.length; i++){
+      if (event.chart.graphs[i].id == "all"){
+        event.chart.graphs[i].relatedGuide.lineAlpha = 0.5;
+        event.chart.graphs[i].relatedGuide.label = event.chart.graphs[i].relatedGuide.originalLabel;
+      }
+    }
   }
+  event.chart.validateNow();
 }
 
 function drawTimeIndicator(timestamp) {
