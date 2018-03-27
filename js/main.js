@@ -312,7 +312,7 @@ panels: [
     axisColor: "#008000",
     color: "#008000",
     unit: "Hz",
-    unitPosition: "left"
+    unitPosition: "right"
   }],
   stockGraphs: [ {
     id: "g2",
