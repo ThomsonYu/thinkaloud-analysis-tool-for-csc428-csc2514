@@ -164,9 +164,6 @@ function loadTaskData () {  //load the audio when the UI is displayed
       mean = getMean(pitchData);
       stdDev = getStdDev(pitchData, mean);
       suddenPitchChangeData = getSuddenPitchChange(pitchData);
-      console.log("Mean:" + mean);
-      console.log("Sd: " + stdDev);
-      console.log(suddenPitchChangeData);
       console.log("data is ready...");
       mChart = drawCharts();
       drawTranscript();
@@ -193,18 +190,19 @@ function getStdDev(pitchData, mean){
   return Math.sqrt(sd/(pitchData.length));
 }
 
-// Might have to tweak this to i+2 if it is too frequent
 function getSuddenPitchChange(pitchData){
   var suddenChangeArray = [];
   for (var i=0; i < pitchData.length; i++){
     if (i+1 < pitchData.length){
       // From low to high
-      if (parseFloat(pitchData[i].data)*2.0 < (pitchData[i+1].data)){
-        suddenChangeArray.push(pitchData[i], pitchData[i+1]);
+      if (parseFloat(pitchData[i].data)*2.2 < (pitchData[i+1].data)){
+        suddenChangeArray.push(pitchData[i]);
+        suddenChangeArray.push(pitchData[i+1]);
       }
       // From high to low
-      else if ((pitchData[i].data) > parseFloat(pitchData[i+1].data)*2.0){
-        suddenChangeArray.push(pitchData[i], pitchData[i+1]);
+      else if ((pitchData[i].data) > parseFloat(pitchData[i+1].data)*2.2){
+        suddenChangeArray.push(pitchData[i]);
+        suddenChangeArray.push(pitchData[i+1]);
       }
     }
   }
@@ -243,17 +241,7 @@ function parseData(dataset_url) {
       var temppitchData = inputdata[i].pitch;
       for(var j = 0; j < temppitchData.length; j++){
         var time = start + j * (end - start) / temppitchData.length;
-        if (j+1 < temppitchData.length){
-          if (parseFloat(temppitchData[j])*2.0 < parseFloat(temppitchData[j+1])){
-            pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "lineColor": "#cc4748", "legendColor": "#cc4748", "label": "undefined"});
-          }
-          else if (parseFloat(temppitchData[j]) > parseFloat(temppitchData[j+1])*2.0){
-            pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "lineColor": "#cc4748", "legendColor": "#cc4748", "label": "undefined"});
-          }
-          else {
-            pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "legendColor": AmCharts.randomColor, "label": "undefined"});
-          }
-        }
+        pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "legendColor": AmCharts.randomColor, "label": "undefined"});
       }
     }
   }
@@ -313,9 +301,19 @@ function drawCharts(){
 ],
 panels: [
 {
-  showCategoryAxis: true,
+  showCategoryAxis: false,
   title: "Pitch (HZ)",
   allowTurningOff: true,
+  recalculateToPercents: "never",
+  valueAxes: [{
+    title: "Average",
+    baseValue: mean,
+    axisAlpha: "0.5",
+    axisColor: "#008000",
+    color: "#008000",
+    unit: "Hz",
+    unitPosition: "left"
+  }],
   stockGraphs: [ {
     id: "g2",
     compareGraphType:"smoothedLine",
@@ -329,7 +327,6 @@ panels: [
   {
     id: "g3",
     compareGraphType:"line",
-    lineThickness: 5,
     connect: false,
     valueField: "data3",
     compareField: "data3",
@@ -339,6 +336,34 @@ panels: [
     lineColorField: "lineColor",
   } 
 ],
+guides: [ {
+  fillAlpha: 0.2,
+  value: mean,
+  above: true,
+  color: "#008000",
+  lineColor: "#008000",
+  label: "Average Pitch",
+  inside: true,
+  position: "right"
+},
+{
+  fillAlpha: 0.2,
+  value: mean + stdDev,
+  above: true,
+  color: "#008000",
+  lineColor: "#008000",
+  label: "+1 SD",
+  position: "right"
+},
+{
+  fillAlpha: 0.2,
+  value: mean-stdDev,
+  above: true,
+  color: "#008000",
+  lineColor: "#008000",
+  label: "-1 SD",
+  position: "right"
+}],
   stockLegend: {
     enabled: true,
     markType: "none",
@@ -355,7 +380,7 @@ panels: [
 }
 ],
 valueAxesSettings:{
-  labelsEnabled: false,
+  labelsEnabled: true,
 },
 categoryAxesSettings: {
   groupToPeriods: [ 'fff', 'ss' ], // specify period grouping
