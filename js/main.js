@@ -241,7 +241,7 @@ function parseData(dataset_url) {
       var temppitchData = inputdata[i].pitch;
       for(var j = 0; j < temppitchData.length; j++){
         var time = start + j * (end - start) / temppitchData.length;
-        pitchData.push({"time": time, "data":parseFloat(temppitchData[j]), "legendColor": AmCharts.randomColor, "label": "undefined"});
+        pitchData.push({"time": time, "data":parseFloat(parseFloat(temppitchData[j]).toFixed(5)), "legendColor": AmCharts.randomColor, "label": "undefined"});
       }
     }
   }
@@ -306,13 +306,45 @@ panels: [
   allowTurningOff: true,
   recalculateToPercents: "never",
   valueAxes: [{
-    title: "Average",
     baseValue: mean,
     axisAlpha: "0.5",
     axisColor: "#008000",
     color: "#008000",
     unit: "Hz",
-    unitPosition: "right"
+    unitPosition: "right",
+    guides: [ {
+      lineAlpha: 0.5,
+      boldLabel: true,
+      value: mean,
+      above: true,
+      color: "#008000",
+      lineColor: "#008000",
+      label: "Average Pitch",
+      inside: false,
+      position: "right"
+    },
+    {
+      lineAlpha: 0.5,
+      boldLabel: true,
+      value: mean + stdDev,
+      above: true,
+      color: "#008000",
+      lineColor: "#008000",
+      label: "+1 SD",
+      inside: false,
+      position: "right"
+    },
+    {
+      lineAlpha: 0.5,
+      boldLabel: true,
+      value: mean-stdDev,
+      above: true,
+      color: "#008000",
+      lineColor: "#008000",
+      label: "-1 SD",
+      inside: false,
+      position: "right"
+    }]
   }],
   stockGraphs: [ {
     id: "g2",
@@ -336,40 +368,27 @@ panels: [
     lineColorField: "lineColor",
   } 
 ],
-guides: [ {
-  fillAlpha: 0.2,
-  value: mean,
-  above: true,
-  color: "#008000",
-  lineColor: "#008000",
-  label: "Average Pitch",
-  inside: true,
-  position: "right"
-},
-{
-  fillAlpha: 0.2,
-  value: mean + stdDev,
-  above: true,
-  color: "#008000",
-  lineColor: "#008000",
-  label: "+1 SD",
-  position: "right"
-},
-{
-  fillAlpha: 0.2,
-  value: mean-stdDev,
-  above: true,
-  color: "#008000",
-  lineColor: "#008000",
-  label: "-1 SD",
-  position: "right"
-}],
   stockLegend: {
     enabled: true,
+    valueWidth: 90,
     markType: "none",
-    markSize: 0
+    markSize: 0,
+    listeners: [
+      {
+        event: "hideItem",
+        method: hideGuide
+      },
+      {
+        event: "showItem",
+        method: showguide
+      }
+    ]
   },
   listeners:[
+  {
+    event: "init",
+    method: loadGuides
+  }, 
   {
     event: "zoomed",
     method: handleZoom
@@ -537,6 +556,41 @@ function handleMousemove(e){
   if(selection == false)
     updateTranscript(timestamp);
   drawTimeIndicator(timestamp);
+}
+
+function loadGuides(event){
+  setTimeout( function() {
+    for ( var x = 0; x < event.chart.valueAxes.length; x++ ) {
+      for ( var y = 0; y < event.chart.valueAxes[ x ].guides.length; y++ ) {
+        var guide = event.chart.valueAxes[ x ].guides[ y ];
+        var graph = new AmCharts.AmGraph();
+        graph.balloonText = "";
+        graph.lineColor = guide.lineColor;
+        graph.lineAlpha = 1;
+        graph.title = guide.label;
+        graph.valueField = "dummy";
+        graph.relatedGuide = guide;
+        event.chart.addGraph( graph );
+      }
+    }
+  }, 10 );
+}
+
+function hideGuide(event){
+  if (event.dataItem.relatedGuide !== undefined) {
+    event.dataItem.relatedGuide.lineAlpha = 0;
+    event.dataItem.relatedGuide.originalLabel = event.dataItem.relatedGuide.label;
+    event.dataItem.relatedGuide.label = "";
+    event.chart.validateNow();
+  }
+}
+
+function showguide(event){
+  if (event.dataItem.relatedGuide !== undefined) {
+    event.dataItem.relatedGuide.lineAlpha = 0.5;
+    event.dataItem.relatedGuide.label = event.dataItem.relatedGuide.originalLabel;
+    event.chart.validateNow();
+  }
 }
 
 function drawTimeIndicator(timestamp) {
