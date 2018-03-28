@@ -584,7 +584,6 @@ function loadGuides(event){
         event.chart.addGraph( graph );
       }
     }
-    console.log(event.chart);
   }, 10 );
 }
 
