@@ -174,6 +174,7 @@ function loadTaskData () {  //load the audio when the UI is displayed
   }
 };
 
+// Get mean of all pitch data
 function getMean(pitchData){
   var total = 0;
   for (var i = 0; i < pitchData.length; i++){
@@ -182,6 +183,7 @@ function getMean(pitchData){
   return total / pitchData.length;
 }
 
+// Get standard deviation of pitch data
 function getStdDev(pitchData, mean){
   var sd = 0;
   for (var i = 0; i < pitchData.length; i++){
@@ -190,6 +192,7 @@ function getStdDev(pitchData, mean){
   return Math.sqrt(sd/(pitchData.length));
 }
 
+// Returns an arary of pitch data where the pitch either increases or decreases by a factor of 2.2 signalling a sudden change in pitch
 function getSuddenPitchChange(pitchData){
   var suddenChangeArray = [];
   for (var i=0; i < pitchData.length; i++){
@@ -275,9 +278,8 @@ function drawCharts(){
   dataProvider: pitchData,
   categoryField: "time",
   compared: false
-}
+},
 // Sudden pitch change data set
-,
 {
   fieldMappings: [{
     fromField: "data",
@@ -564,6 +566,8 @@ function handleMousemove(e){
   drawTimeIndicator(timestamp);
 }
 
+// Referenced from https://www.amcharts.com/kbase/displaying-chart-guides-in-legend/
+// Draw the guides (For standard deviation and mean)
 function loadGuides(event){
   setTimeout( function() {
     for ( var x = 0; x < event.chart.valueAxes.length; x++ ) {
@@ -587,6 +591,7 @@ function loadGuides(event){
   }, 10 );
 }
 
+// Hides all the guides
 function hideGuide(event){
   if (event.dataItem.relatedGuide.id == "all"){
     for (var i=0; i < event.chart.graphs.length; i++){
@@ -600,6 +605,7 @@ function hideGuide(event){
   event.chart.validateNow();
 }
 
+// Shows all the guides
 function showguide(event){
   if (event.dataItem.relatedGuide.id == "all"){
     for (var i=0; i < event.chart.graphs.length; i++){
